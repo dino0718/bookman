@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>章節貼文產生器</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+  <div class="container py-5">
+    <h2 class="mb-4">📘 IG/Threads 章節貼文產生器</h2>
+    <form id="uploadForm" enctype="multipart/form-data">
+      <div class="mb-3">
+        <label for="file" class="form-label">上傳章節截圖（可多張）</label>
+        <input class="form-control" type="file" id="file" name="files" multiple required>
+      </div>
+      <div class="mb-3">
+        <label for="schedule" class="form-label">預定發文時間（可空白，預設現在時間）</label>
+        <input class="form-control" type="datetime-local" id="schedule" name="schedule">
+      </div>
+      <div class="mb-3">
+        <label for="instruction" class="form-label">產出微調說明（可空白）</label>
+        <textarea class="form-control" id="instruction" name="instruction" rows="3" placeholder="例如：請使用較口語化語氣、限制在 500 字內..."></textarea>
+      </div>
+      <button id="submitBtn" type="submit" class="btn btn-primary">上傳並生成 JSON</button>
+    </form>
+
+    <div id="result" class="mt-4"></div>
+    <div id="preview" class="mt-4"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById('uploadForm');
+    const resultDiv = document.getElementById('result');
+    const previewDiv = document.getElementById('preview');
+    const submitBtn = document.getElementById('submitBtn');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.textContent = '處理中...請稍候';
+
+      const formData = new FormData(form);
+      const response = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+
+      const result = await response.json();
+      let html = '<div class="alert alert-success">✅ 成功產出 JSON：</div><ul>';
+      result.results.forEach(r => {
+        html += `<li>📁 <strong>${r.file}</strong> ➜ 儲存於 <code>${r.path}</code><br>🕒 發文時間：<code>${r.schedule}</code></li>`;
+      });
+      html += '</ul>';
+      resultDiv.innerHTML = html;
+
+      // 預覽貼文內容
+      if (result.preview) {
+        previewDiv.innerHTML = `
+          <div class="card">
+            <div class="card-header">📝 預覽產出內容</div>
+            <div class="card-body">
+              <pre style="white-space: pre-wrap;">${result.preview}</pre>
+            </div>
+          </div>
+        `;
+      }
+
+      submitBtn.disabled = false;
+      submitBtn.textContent = '上傳並生成 JSON';
+    });
+  </script>
+</body>
+</html>
